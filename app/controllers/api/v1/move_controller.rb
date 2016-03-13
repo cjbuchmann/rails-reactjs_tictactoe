@@ -1,7 +1,7 @@
 class Api::V1::MoveController < Api::BaseController
 
   def create
-    board = Persistance::fetch(:board)
+    board = Board.load( Persistance::fetch(:board) )
 
     raise BoardNotFoundError if board.blank?
 
@@ -11,7 +11,10 @@ class Api::V1::MoveController < Api::BaseController
       begin
         board.add_move(move)
 
-        render json: move, status: :created
+        Persistance::persist(:board, board.as_json )
+
+        winner = board.has_won?(move.player) ? move.player : nil
+        render json: { move: move, winner: winner }, status: :created
       rescue Board::InvalidMoveError
         render json: { errors: ['Illegal board move'] }, status: :bad_request
       end

@@ -8,6 +8,6 @@ class Move
   validates :player, presence: true
 
   def as_json(options={})
-    super(only: ["player"])
+    super(only: ["x_pos", "y_pos", "player"])
   end
 end

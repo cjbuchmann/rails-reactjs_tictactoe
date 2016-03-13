@@ -1,0 +1,21 @@
+table.tic-tac-toe-table{
+  margin-top:1em;
+  border-collapse: collapse;
+
+  td{
+    text-align:center;
+    border:solid 1px;
+    width:3em;
+    height:3em;
+  }
+}
+
+.winner-container{
+  margin-top:1em;
+}
+
+.new-game-input{
+  margin-left:1em;
+  margin-right:1em;
+  width:2em;
+}
