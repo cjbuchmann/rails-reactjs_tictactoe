@@ -8,7 +8,7 @@ TicTacToe.Board = React.createClass({
       player: this.props.currentPlayer
     };
 
-    this.props.onNewMove({ move: move });
+    this.props.onNewMove(move);
   },
 
   render: function(){

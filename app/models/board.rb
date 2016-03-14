@@ -2,14 +2,26 @@ class Board
   include ActiveModel::Model
 
   class InvalidMoveError < StandardError; end
+  class InvalidLoadError < StandardError; end
+  class InvalidPlayerError < StandardError; end
 
-  attr_accessor :board
+  validates :player_one, presence: true
+  validates :player_two, presence: true
+  validates :size, presence: true, numericality: true
 
-  def initialize(board_size)
+  attr_accessor :board, :player_one, :player_two, :size, :current_player_turn
+
+  def build
+    self.size = self.size.to_i
+
+    unless self.current_player_turn
+      self.current_player_turn = [self.player_one, self.player_two].sample
+    end
+
     @board = []
-    board_size.times do
+    self.size.times do
       row = []
-      board_size.times do
+      self.size.times do
         row << nil
       end
       @board << row
@@ -19,11 +31,16 @@ class Board
   end
 
   def add_move(move)
+    if self.current_player_turn != move.player
+      raise InvalidPlayerError
+    end
+
     move.x_pos = move.x_pos.to_i
     move.y_pos = move.y_pos.to_i
 
     if valid_move?(move)
       @board[move.x_pos][move.y_pos] = move
+      self.current_player_turn = next_player
     else
       raise InvalidMoveError
     end
@@ -59,27 +76,18 @@ class Board
     false
   end
 
-  def find_players
-    players = {}
-    @board.each_with_index do |row, i|
-      row.each_with_index do |col, j|
-        players[col.player] = col.player if col
-      end
-    end
-
-    players.keys
-  end
-
   # we don't want to persist the object in memory, just the data,
   # so we'll load up the object here
   def self.load(serial)
-    board = Board.new(serial[:board].size)
+    board = Board.new(serial.except('winner').merge({size: serial['board'].size}))
+    raise InvalidLoadError unless board.valid?
+
     moves = []
-    serial[:board].each_with_index do |row, i|
+    serial['board'].each_with_index do |row, i|
       row = []
-      serial[:board][i].each_with_index do |col, j|
-        if serial[:board][i][j].present?
-          row << Move.new( serial[:board][i][j] )
+      serial['board'][i].each_with_index do |col, j|
+        if serial['board'][i][j].present?
+          row << Move.new( serial['board'][i][j] )
         else
           row << nil
         end
@@ -93,16 +101,19 @@ class Board
 
   def as_json(options={})
     winner = nil
-    find_players.each do |player|
-      if has_won?(player)
+
+    [self.player_one, self.player_two].each do |player|
+      if has_won? player
         winner = player
         break
       end
     end
 
-
     {
       board: @board.as_json,
+      player_one: self.player_one,
+      player_two: self.player_two,
+      current_player_turn: self.current_player_turn,
       winner: winner
     }
   end
@@ -110,7 +121,13 @@ class Board
   private
 
   def valid_move?(move)
-    puts "move is #{move.inspect}"
     @board[move.x_pos][move.y_pos].blank?
+  end
+
+  def next_player
+    if self.current_player_turn == self.player_one
+      return self.player_two
+    end
+    self.player_one
   end
 end

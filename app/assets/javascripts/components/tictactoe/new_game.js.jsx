@@ -7,7 +7,7 @@ TicTacToe.NewGame = React.createClass({
   handleSubmit: function(e){
     e.preventDefault();
     var board = { size: this.state.board_size };
-    this.props.onNewGame({ board: board });
+    this.props.onNewGame(board);
   },
 
   handleBoardSizeChange: function(e){
